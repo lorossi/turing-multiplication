@@ -62,13 +62,12 @@ class Automaton {
       const updates = this._fsa.update(this.current_chars);
 
       if (updates) {
-        updates.directions
-          .split("")
-          .forEach((d, i) => (this._tapes[i].step_direction = d));
-
-        updates.new_chars
-          .split("")
-          .forEach((c, i) => (this._tapes[i].new_char = c));
+        this._tapes.forEach((t, i) =>
+          t.setAnimation(
+            updates.new_chars.split("")[i],
+            updates.directions.split("")[i]
+          )
+        );
       }
     }
   }
@@ -82,7 +81,7 @@ class Automaton {
   }
 
   get current_chars() {
-    return this._tapes.reduce((a, b) => a + b.current_char.toString(), "");
+    return this._tapes.reduce((a, b) => a + b.getCurrentChar().toString(), "");
   }
 
   set current_chars(chars) {
@@ -197,10 +196,14 @@ class CircularTape {
 
     this._current_frame = 0;
     this._current_pos = 0;
+
     this._current_rotation = 0;
-    this._is_stepping = false;
-    this._is_writing = false;
     this._current_opacity = 255;
+    this._char_changed = false;
+
+    this._is_animating = false;
+    this._animation_started = 0;
+
     this._step_direction = 0;
     this._new_char = "";
   }
@@ -211,36 +214,33 @@ class CircularTape {
       this._tape.push(ALPHABET[ALPHABET.length - 1]);
   }
 
+  setAnimation(new_char, step_direction) {
+    this._is_animating = true;
+    this._animation_started = this._current_frame;
+    this._new_char = new_char;
+    this._step_direction = this._directions_map[step_direction];
+  }
+
   update(current_frame) {
     this._current_frame = current_frame;
 
-    if (this._is_writing && this._is_stepping)
-      this._step_started = this._write_started + ANIMATION_DURATION;
-
-    if (this._is_writing) {
-      const percent =
-        (current_frame - this._write_started) / ANIMATION_DURATION;
-
-      if (this.current_char != this._new_char) {
-        this.current_char = this._new_char;
-      } else if (percent < 1) {
-      } else {
-        this._is_writing = false;
-      }
-    } else if (this._is_stepping) {
-      // compute rotation if step animation is occurring
-      const percent = (current_frame - this._step_started) / ANIMATION_DURATION;
-
-      // check if animation has ended
-      if (percent < 1) {
+    if (this._is_animating) {
+      const diff = this._current_frame - this._animation_started;
+      const percent = (diff / ANIMATION_DURATION) % 1;
+      if (diff < ANIMATION_DURATION) {
+        if (this._new_char != this.getCurrentChar()) {
+          this.setCurrentChar(this._new_char);
+          this._char_changed = true;
+        }
+        this._current_opacity = polyInOutEase(percent, 16);
+      } else if (diff < 2 * ANIMATION_DURATION) {
         this._current_rotation =
-          (absInOutEase(percent, 4, 10) * Math.PI * 2 * this._step_direction) /
-          TAPE_LEN;
+          (absInOutEase(percent, 4, 10) * Math.PI * 2) / TAPE_LEN;
       } else {
-        // it has, add the current rotation to the base angle and keep on going
-        this._is_stepping = false;
-        this._current_rotation = 0;
+        this._is_animating = false;
+        this._char_changed = false;
         this._current_pos += this._step_direction;
+        this._current_rotation = 0;
       }
     }
   }
@@ -287,8 +287,8 @@ class CircularTape {
     ctx.rotate(this._current_rotation - spacing / 2 + current_rotation);
 
     this._tape.forEach((t, i) => {
-      if (this._getCurrentPos() == i && this._is_writing) {
-        ctx.fillStyle = "red";
+      if (this._char_changed && this._getCurrentPos() == i) {
+        ctx.fillStyle = `rgb(0, 0, 0, ${this._current_opacity})`;
       } else {
         ctx.fillStyle = "black";
       }
@@ -318,41 +318,20 @@ class CircularTape {
 
     return pos;
   }
-  get is_animating() {
-    return this._is_stepping || this._is_writing;
-  }
 
-  get current_char() {
+  getCurrentChar() {
     const pos = this._getCurrentPos();
     return this._tape[pos];
   }
 
-  set current_char(char) {
+  setCurrentChar(char) {
     if (!ALPHABET.includes(char)) return;
 
     const pos = this._getCurrentPos();
     this._tape[pos] = char;
   }
 
-  get step_direction() {
-    return self._step_direction;
-  }
-
-  set step_direction(direction) {
-    // sets the step animation
-    this._is_stepping = true;
-    this._step_direction = this._directions_map[direction];
-    this._step_started = this._current_frame;
-  }
-
-  get new_char() {
-    return this._new_char;
-  }
-
-  set new_char(new_char) {
-    if (new_char == " ") return;
-    this._is_writing = true;
-    this._new_char = new_char;
-    this._write_started = this._current_frame;
+  get is_animating() {
+    return this._is_animating;
   }
 }
