@@ -5,6 +5,7 @@ class Sketch extends Engine {
 
   setup() {
     this._tm = new Automaton(this.width / 2);
+    this._tm.setTapes(["1111", "", ""]);
   }
 
   draw() {
@@ -25,22 +26,6 @@ class Sketch extends Engine {
   }
 
   keyPress(key, code) {
-    //console.log(code);
-    switch (code) {
-      case 13: // enter
-        console.log(this._tm.current_chars);
-        break;
-      case 97: // a
-        this._tm.stepDisks(-1);
-        break;
-      case 100: // d
-        this._tm.stepDisks(1);
-        break;
-      case 115: // s
-        this._tm.stepDisks();
-        break;
-      default:
-        break;
-    }
+    console.log("key press", { key, code });
   }
 }

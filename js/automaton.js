@@ -1,16 +1,29 @@
 const TAPE_LEN = 25;
-const DISKS_NUM = 3;
-const ROTATION_DURATION = 30;
-const ALPHABET = [0, 1, "b"];
+const TAPES_NUM = 3;
+const ANIMATION_DURATION = 30;
+const ALPHABET = ["0", "1", "#", " "];
 
-const inOutEase = (x, n = 10) => {
+/**
+ * Polygonal in out easing
+ */
+const polyInOutEase = (x, n = 10) => {
   if (x < 0.5) return Math.pow(2, n - 1) * Math.pow(x, n);
   return 1 - Math.pow(-2 * x + 2, n) / 2;
 };
 
+/**
+ * Non symmetric in out polygonal ease
+ */
 const absInOutEase = (x, ni = 5, no = 5) => {
   if (x < 0.5) return Math.pow(2, ni - 1) * Math.pow(x, ni);
   return 1 - Math.pow(-2 * x + 2, no) / 2;
+};
+
+const dec_to_hex = (dec, padding = 0, prefix = false, round = true) => {
+  if (round) dec = Math.floor(dec);
+  let hex = dec.toString(16).padStart(padding, 0).toUpperCase();
+  if (prefix) hex = "0x" + hex;
+  return hex;
 };
 
 class Automaton {
@@ -18,53 +31,133 @@ class Automaton {
     this._size = size;
     this._current_frame = 0;
 
-    const disk_width = this._size / DISKS_NUM / 2;
+    const disk_width = this._size / TAPES_NUM / 2;
     const disk_spacing = disk_width / 2;
 
-    this._tapes = Array(DISKS_NUM)
+    this._tapes = Array(TAPES_NUM)
       .fill(null)
       .map((_, i) => {
         const disk_r = this._size - (disk_spacing + disk_width) * i;
         return new CircularTape(disk_r, disk_width);
-      });
+      })
+      .reverse();
 
-    this._heads = Array(DISKS_NUM)
+    this._heads = Array(TAPES_NUM)
       .fill(null)
       .map((_, i) => new Head(this._tapes[i]._r, disk_width / 5));
+
+    this._fsa = new FSA(this._size / 2);
   }
 
-  stepDisks(dir = 0) {
-    this._tapes.forEach((d) => {
-      if (!d.is_stepping) {
-        let tape_dir;
-
-        if (dir == 0) {
-          tape_dir = Math.random() > 0.33 ? (Math.random() > 0.5 ? -1 : 1) : 0;
-        } else {
-          tape_dir = dir;
-        }
-
-        d.step(tape_dir);
-      }
-    });
+  setTapes(contents) {
+    contents.forEach((c, i) => this._tapes[i].setTape(c.split("")));
   }
-
-  getCurrentChars() {}
 
   update(current_frame) {
     this._current_frame = current_frame;
-    this._tapes.forEach((d) => d.update(current_frame));
+
+    this._tapes.forEach((t) => t.update(current_frame));
+
+    if (this._tapes.every((t) => !t.is_animating && !this._fsa.ended)) {
+      const updates = this._fsa.update(this.current_chars);
+
+      if (updates) {
+        updates.directions
+          .split("")
+          .forEach((d, i) => (this._tapes[i].step_direction = d));
+
+        updates.new_chars
+          .split("")
+          .forEach((c, i) => (this._tapes[i].new_char = c));
+      }
+    }
   }
 
   show(ctx) {
     ctx.save();
     this._tapes.forEach((d) => d.show(ctx));
     this._heads.forEach((h) => h.show(ctx));
+    this._fsa.show(ctx);
     ctx.restore();
   }
 
   get current_chars() {
-    return this._tapes.reduce((a, b) => b.current_value.toString() + a, "");
+    return this._tapes.reduce((a, b) => a + b.current_char.toString(), "");
+  }
+
+  set current_chars(chars) {
+    chars.forEach((c, i) => {
+      this._tapes[i].current_char = c;
+    });
+  }
+}
+
+class State {
+  constructor(name, initial = false, final = false) {
+    this.name = name;
+    this.initial = initial;
+    this.final = final;
+  }
+}
+
+class Transition {
+  constructor(from_state, to_state, chars, new_chars, directions) {
+    this.from_state = from_state;
+    this.to_state = to_state;
+    this.chars = chars;
+    this.new_chars = new_chars;
+    this.directions = directions;
+  }
+}
+
+class FSA {
+  constructor(size) {
+    this._size = size;
+    this._ended = false;
+
+    this._states = [new State("q0", true, false), new State("q1", false, true)];
+    this._transitions = [
+      new Transition("q0", "q0", "0  ", "000", "RRR"),
+      new Transition("q0", "q0", "1  ", "111", "RRR"),
+    ];
+
+    this._current_state = this._states.filter((s) => s.initial)[0].name;
+  }
+
+  update(chars) {
+    if (this._ended) return;
+
+    const transitions = this._transitions.filter(
+      (t) => t.from_state == this._current_state && t.chars == chars
+    );
+
+    if (transitions.length != 1) return;
+
+    this._current_state = transitions[0].to_state;
+
+    if (
+      this._states.filter((s) => this._current_state == s.name && s.final)
+        .length > 0
+    )
+      this._ended = true;
+
+    return {
+      new_chars: transitions[0].new_chars,
+      directions: transitions[0].directions,
+    };
+  }
+
+  show(ctx) {
+    ctx.save();
+    ctx.strokeStyle = "black";
+    ctx.beginPath();
+    ctx.arc(0, 0, this._size / 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  get ended() {
+    return this._ended;
   }
 }
 
@@ -98,31 +191,45 @@ class CircularTape {
 
     this._tape = Array(TAPE_LEN)
       .fill(null)
-      .map((_) => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]);
+      .map((_) => ALPHABET[ALPHABET.length - 1]);
+
+    this._directions_map = { R: 1, L: -1, S: 0 };
 
     this._current_frame = 0;
-    this._current_position = 0;
+    this._current_pos = 0;
     this._current_rotation = 0;
     this._is_stepping = false;
-    this._step_started = 0;
+    this._is_writing = false;
+    this._current_opacity = 255;
     this._step_direction = 0;
+    this._new_char = "";
   }
 
-  step(direction) {
-    // check if the disk is already stepping
-    if (this._is_stepping) return;
-
-    // sets the step animation
-    this._is_stepping = true;
-    this._step_started = this._current_frame;
-    this._step_direction = direction;
+  setTape(tape) {
+    this._tape = [...tape].fill(" ", tape.length, TAPE_LEN);
+    for (let i = tape.length; i < TAPE_LEN; i++)
+      this._tape.push(ALPHABET[ALPHABET.length - 1]);
   }
 
   update(current_frame) {
     this._current_frame = current_frame;
-    if (this._is_stepping) {
+
+    if (this._is_writing && this._is_stepping)
+      this._step_started = this._write_started + ANIMATION_DURATION;
+
+    if (this._is_writing) {
+      const percent =
+        (current_frame - this._write_started) / ANIMATION_DURATION;
+
+      if (this.current_char != this._new_char) {
+        this.current_char = this._new_char;
+      } else if (percent < 1) {
+      } else {
+        this._is_writing = false;
+      }
+    } else if (this._is_stepping) {
       // compute rotation if step animation is occurring
-      const percent = (current_frame - this._step_started) / ROTATION_DURATION;
+      const percent = (current_frame - this._step_started) / ANIMATION_DURATION;
 
       // check if animation has ended
       if (percent < 1) {
@@ -133,7 +240,7 @@ class CircularTape {
         // it has, add the current rotation to the base angle and keep on going
         this._is_stepping = false;
         this._current_rotation = 0;
-        this._current_position += this._step_direction;
+        this._current_pos += this._step_direction;
       }
     }
   }
@@ -170,16 +277,21 @@ class CircularTape {
     const text_dist = Math.floor((this._r + this._inner_r - font_size) / 2);
     const spacing = (Math.PI * 2) / TAPE_LEN;
 
-    ctx.fillStyle = "black";
     ctx.font = `${font_size}px Courier New`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
 
-    const current_rotation = spacing * this._current_position;
+    const current_rotation = spacing * this._current_pos;
 
     ctx.save();
     ctx.rotate(this._current_rotation - spacing / 2 + current_rotation);
+
     this._tape.forEach((t, i) => {
+      if (this._getCurrentPos() == i && this._is_writing) {
+        ctx.fillStyle = "red";
+      } else {
+        ctx.fillStyle = "black";
+      }
       ctx.save();
       // draw divisions
       ctx.rotate(-spacing * i);
@@ -198,16 +310,49 @@ class CircularTape {
     ctx.restore();
   }
 
-  get is_stepping() {
-    return this._is_stepping;
-  }
-
-  get current_value() {
-    let pos = this._current_position;
+  _getCurrentPos() {
+    let pos = this._current_pos;
 
     while (pos < 0) pos += TAPE_LEN;
     while (pos >= TAPE_LEN) pos -= TAPE_LEN;
 
+    return pos;
+  }
+  get is_animating() {
+    return this._is_stepping || this._is_writing;
+  }
+
+  get current_char() {
+    const pos = this._getCurrentPos();
     return this._tape[pos];
+  }
+
+  set current_char(char) {
+    if (!ALPHABET.includes(char)) return;
+
+    const pos = this._getCurrentPos();
+    this._tape[pos] = char;
+  }
+
+  get step_direction() {
+    return self._step_direction;
+  }
+
+  set step_direction(direction) {
+    // sets the step animation
+    this._is_stepping = true;
+    this._step_direction = this._directions_map[direction];
+    this._step_started = this._current_frame;
+  }
+
+  get new_char() {
+    return this._new_char;
+  }
+
+  set new_char(new_char) {
+    if (new_char == " ") return;
+    this._is_writing = true;
+    this._new_char = new_char;
+    this._write_started = this._current_frame;
   }
 }
