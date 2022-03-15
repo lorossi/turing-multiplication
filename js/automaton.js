@@ -133,7 +133,7 @@ class Automaton {
    */
   set current_chars(chars) {
     chars.forEach((c, i) => {
-      this._tapes[i].current_char = c;
+      if (ALPHABET.contains(c)) this._tapes[i].current_char = c;
     });
   }
 
@@ -182,21 +182,72 @@ class FSA {
 
     // Initialize all the states
     this._states = [
-      new State("q0", true, false),
-      new State("q1", false, false),
-      new State("q2", false, true),
+      new State("q0", true, false), // initial state
+      new State("q1", false, false), // find digits
+      new State("q2", false, false), // last digit found
+      new State("q3", false, false), // write 1 carry
+      new State("q5", false, false), // go back after carry
+      new State("q6", false, false), // sum completed
+      new State("q7", false, false), // write 1 50 sum
     ];
     // Initialize all the transitions
     this._transitions = [
-      new Transition("q0", "q0", "0  ", "0  ", "RSS"),
-      new Transition("q0", "q0", "1  ", "1  ", "RSS"),
-      new Transition("q0", "q1", "   ", " 0 ", "LSS"),
-      new Transition("q1", "q1", "10 ", "100", "LSL"),
-      new Transition("q1", "q1", "00 ", "001", "LSL"),
-      new Transition("q1", "q2", " 0 ", "   ", "SSS"),
+      new Transition("q0", "q1", "1  ", "1  ", "RRS"),
+      new Transition("q0", "q1", "0  ", "0  ", "RRS"),
+
+      new Transition("q1", "q1", "0  ", "0  ", "RRS"),
+      new Transition("q1", "q1", "1  ", "1  ", "RRS"),
+
+      new Transition("q1", "q7", "   ", "   ", "LLS"),
+
+      new Transition("q2", "q2", "0  ", "000", "LLL"),
+      new Transition("q2", "q2", "1  ", "101", "LLL"),
+      new Transition("q2", "q2", "00 ", "000", "LLL"),
+      new Transition("q2", "q2", "01 ", "011", "LLL"),
+      new Transition("q2", "q2", "10 ", "101", "LLL"),
+      new Transition("q2", "q2", " 1 ", " 11", "LLL"),
+      new Transition("q2", "q2", " 0 ", " 11", "LLL"),
+      new Transition("q2", "q6", "   ", "   ", "RRR"),
+
+      new Transition("q2", "q3", "11 ", "110", "SLS"),
+
+      new Transition("q3", "q2", "  0", "010", "LSL"),
+      new Transition("q3", "q2", "  1", "011", "LSL"),
+      new Transition("q3", "q2", "0 0", "010", "LSL"),
+      new Transition("q3", "q2", "0 1", "011", "LSL"),
+      new Transition("q3", "q2", "1 0", "110", "LSL"),
+      new Transition("q3", "q2", "1 1", "111", "LSL"),
+
+      new Transition("q6", "q6", "  0", "0  ", "RRR"),
+      new Transition("q6", "q6", "  1", "1  ", "RRR"),
+      new Transition("q6", "q6", " 00", "0  ", "RRR"),
+      new Transition("q6", "q6", " 01", "1  ", "RRR"),
+      new Transition("q6", "q6", " 10", "0  ", "RRR"),
+      new Transition("q6", "q6", " 11", "1  ", "RRR"),
+      new Transition("q6", "q6", "000", "0  ", "RRR"),
+      new Transition("q6", "q6", "001", "1  ", "RRR"),
+      new Transition("q6", "q6", "010", "0  ", "RRR"),
+      new Transition("q6", "q6", "011", "1  ", "RRR"),
+      new Transition("q6", "q6", "101", "1  ", "RRR"),
+      new Transition("q6", "q6", "110", "0  ", "RRR"),
+      new Transition("q6", "q6", "111", "1  ", "RRR"),
+      new Transition("q6", "q6", "0 0", "0  ", "RRR"),
+      new Transition("q6", "q6", "0 1", "1  ", "RRR"),
+      new Transition("q6", "q6", "1 0", "0  ", "RRR"),
+      new Transition("q6", "q6", "1 1", "1  ", "RRR"),
+      new Transition("q6", "q7", "   ", "   ", "LLL"),
+
+      new Transition("q7", "q2", "1  ", "11 ", "SSS"),
+      new Transition("q7", "q2", "0  ", "01 ", "SSS"),
     ];
-    // select the initial state
-    this._current_state = this._states.filter((s) => s.initial)[0].name;
+
+    if (this._transitions.length == 0) {
+      this._error = true;
+      this._current_opacity = null;
+    } else {
+      // select the initial state
+      this._current_state = this._states.filter((s) => s.initial)[0].name;
+    }
   }
 
   step(chars) {
@@ -214,12 +265,10 @@ class FSA {
     }
     // update the current state
     this._current_state = transitions[0].to_state;
+    console.log(this._current_state);
 
     // a final state has been reached
-    if (
-      this._states.filter((s) => this._current_state == s.name && s.final)
-        .length == 1
-    )
+    if (this._states.filter((s) => this._current_state == s.name)[0].final)
       this._ended = true;
 
     // set the animation to true
@@ -272,12 +321,13 @@ class FSA {
       ctx.rotate(theta);
       ctx.beginPath();
       ctx.arc(0, this._size / 3, state_size, 0, Math.PI * 2);
-      ctx.stroke();
       // if this is the current state, fill it opaquely
+      ctx.stroke();
       if (s.name == this._current_state) {
         const hex_opacity = dec_to_hex(this._current_opacity);
         ctx.fillStyle = WHITE + hex_opacity;
         ctx.fill();
+        ctx.stroke();
       }
     });
     ctx.restore();
@@ -290,7 +340,7 @@ class FSA {
   }
 
   get ended() {
-    return this._ended;
+    return this._ended && !this._is_animating;
   }
 
   get error() {
