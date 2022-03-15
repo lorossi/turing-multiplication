@@ -1,5 +1,5 @@
 const TAPE_LEN = 25;
-const TAPES_NUM = 3;
+const TAPES_NUM = 2;
 const ANIMATION_DURATION = 30;
 const ALPHABET = ["0", "1", "#", " "];
 const WHITE = "#F5F5F5";
@@ -180,95 +180,68 @@ class FSA {
     // opacity relative to the current state
     this._current_opacity = 255;
 
+    // https://www.quora.com/How-do-you-use-a-Turing-machine-to-multiply-2-3
+
     // Initialize all the states
     this._states = [
-      new State("q0", true, false), // initial state
-      new State("q1", false, false), // find digits
-      new State("q2", false, false), // last digit found
-      new State("q3", false, false), // write 1 carry
-      new State("q5", false, false), // go back after carry
-      new State("q6", false, false), // sum completed
-      new State("q7", false, false), // write 1 50 sum
+      new State("q0", true, false), // replace space
     ];
     // Initialize all the transitions
-    this._transitions = [
-      new Transition("q0", "q1", "1  ", "1  ", "RRS"),
-      new Transition("q0", "q1", "0  ", "0  ", "RRS"),
+    this._transitions = [];
 
-      new Transition("q1", "q1", "0  ", "0  ", "RRS"),
-      new Transition("q1", "q1", "1  ", "1  ", "RRS"),
-
-      new Transition("q1", "q7", "   ", "   ", "LLS"),
-
-      new Transition("q2", "q2", "0  ", "000", "LLL"),
-      new Transition("q2", "q2", "1  ", "101", "LLL"),
-      new Transition("q2", "q2", "00 ", "000", "LLL"),
-      new Transition("q2", "q2", "01 ", "011", "LLL"),
-      new Transition("q2", "q2", "10 ", "101", "LLL"),
-      new Transition("q2", "q2", " 1 ", " 11", "LLL"),
-      new Transition("q2", "q2", " 0 ", " 11", "LLL"),
-      new Transition("q2", "q6", "   ", "   ", "RRR"),
-
-      new Transition("q2", "q3", "11 ", "110", "SLS"),
-
-      new Transition("q3", "q2", "  0", "010", "LSL"),
-      new Transition("q3", "q2", "  1", "011", "LSL"),
-      new Transition("q3", "q2", "0 0", "010", "LSL"),
-      new Transition("q3", "q2", "0 1", "011", "LSL"),
-      new Transition("q3", "q2", "1 0", "110", "LSL"),
-      new Transition("q3", "q2", "1 1", "111", "LSL"),
-
-      new Transition("q6", "q6", "  0", "0  ", "RRR"),
-      new Transition("q6", "q6", "  1", "1  ", "RRR"),
-      new Transition("q6", "q6", " 00", "0  ", "RRR"),
-      new Transition("q6", "q6", " 01", "1  ", "RRR"),
-      new Transition("q6", "q6", " 10", "0  ", "RRR"),
-      new Transition("q6", "q6", " 11", "1  ", "RRR"),
-      new Transition("q6", "q6", "000", "0  ", "RRR"),
-      new Transition("q6", "q6", "001", "1  ", "RRR"),
-      new Transition("q6", "q6", "010", "0  ", "RRR"),
-      new Transition("q6", "q6", "011", "1  ", "RRR"),
-      new Transition("q6", "q6", "101", "1  ", "RRR"),
-      new Transition("q6", "q6", "110", "0  ", "RRR"),
-      new Transition("q6", "q6", "111", "1  ", "RRR"),
-      new Transition("q6", "q6", "0 0", "0  ", "RRR"),
-      new Transition("q6", "q6", "0 1", "1  ", "RRR"),
-      new Transition("q6", "q6", "1 0", "0  ", "RRR"),
-      new Transition("q6", "q6", "1 1", "1  ", "RRR"),
-      new Transition("q6", "q7", "   ", "   ", "LLL"),
-
-      new Transition("q7", "q2", "1  ", "11 ", "SSS"),
-      new Transition("q7", "q2", "0  ", "01 ", "SSS"),
-    ];
-
-    if (this._transitions.length == 0) {
+    if (this._states.length == 0) {
       this._error = true;
       this._current_opacity = null;
     } else {
       // select the initial state
-      this._current_state = this._states.filter((s) => s.initial)[0].name;
+      this._current_state = this._states.filter((s) => s.initial)[0];
     }
+  }
+
+  _findTransition(chars) {
+    const transitions = this._transitions
+      .filter((t) => t.from_state == this._current_state.name)
+      .filter((t) => t.chars == chars);
+
+    if (transitions.length != 1) return null;
+    return transitions[0];
+  }
+
+  _findNextState(name) {
+    const state = this._states.filter((s) => s.name == name);
+
+    if (state.length != 1) return null;
+    return state[0];
   }
 
   step(chars) {
     // don't step if the animation is not yet ended
     if (this._ended || this._is_animating) return;
-    // filter all the transitions having the current state as from state
-    const transitions = this._transitions.filter(
-      (t) => t.from_state == this._current_state && t.chars == chars
-    );
+
+    // look for next transition
+    const next_transition = this._findTransition(chars);
     // no transitions found! exit
-    if (transitions.length != 1) {
+    if (next_transition == null) {
       this._ended = true;
       this._error = true;
+      console.log("No transition found");
       return;
     }
+    const next_state = this._findNextState(next_transition.to_state);
+    // no next state found! exit
+    if (next_state == null) {
+      this._ended = true;
+      this._error = true;
+      console.log("No state found");
+      return;
+    }
+
     // update the current state
-    this._current_state = transitions[0].to_state;
+    this._current_state = next_state;
     console.log(this._current_state);
 
     // a final state has been reached
-    if (this._states.filter((s) => this._current_state == s.name)[0].final)
+    if (this._states.filter((s) => this._current_state.name == s.name)[0].final)
       this._ended = true;
 
     // set the animation to true
@@ -277,8 +250,8 @@ class FSA {
     this._current_opacity = 0;
 
     return {
-      new_chars: transitions[0].new_chars,
-      directions: transitions[0].directions,
+      new_chars: next_transition.new_chars,
+      directions: next_transition.directions,
     };
   }
 
@@ -323,7 +296,7 @@ class FSA {
       ctx.arc(0, this._size / 3, state_size, 0, Math.PI * 2);
       // if this is the current state, fill it opaquely
       ctx.stroke();
-      if (s.name == this._current_state) {
+      if (s.name == this._current_state.name) {
         const hex_opacity = dec_to_hex(this._current_opacity);
         ctx.fillStyle = WHITE + hex_opacity;
         ctx.fill();
