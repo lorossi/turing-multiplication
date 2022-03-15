@@ -2,6 +2,8 @@ const TAPE_LEN = 25;
 const TAPES_NUM = 3;
 const ANIMATION_DURATION = 30;
 const ALPHABET = ["0", "1", "#", " "];
+const WHITE = "#F5F5F5";
+const BLACK = "#0E0E0E";
 
 /**
  * Polygonal in out easing
@@ -18,6 +20,11 @@ const absInOutEase = (x, ni = 5, no = 5) => {
   if (x < 0.5) return Math.pow(2, ni - 1) * Math.pow(x, ni);
   return 1 - Math.pow(-2 * x + 2, no) / 2;
 };
+
+/**
+ * Polynomial out easing
+ */
+const polyOutEase = (x, n = 5) => 1 - Math.pow(1 - x, n);
 
 const dec_to_hex = (dec, padding = 0, prefix = false, round = true) => {
   if (round) dec = Math.floor(dec);
@@ -56,16 +63,21 @@ class Automaton {
   update(current_frame) {
     this._current_frame = current_frame;
 
+    this._fsa.update(current_frame);
     this._tapes.forEach((t) => t.update(current_frame));
 
-    if (this._tapes.every((t) => !t.is_animating && !this._fsa.ended)) {
-      const updates = this._fsa.update(this.current_chars);
+    if (
+      this._tapes.every(
+        (t) => !t.is_animating && !this._fsa.ended && !this._fsa.is_animating
+      )
+    ) {
+      const updates = this._fsa.step(this.current_chars);
 
       if (updates) {
         this._tapes.forEach((t, i) =>
           t.setAnimation(
-            updates.new_chars.split("")[i],
-            updates.directions.split("")[i]
+            updates.new_chars.charAt(i),
+            updates.directions.charAt(i)
           )
         );
       }
@@ -113,18 +125,22 @@ class FSA {
   constructor(size) {
     this._size = size;
     this._ended = false;
+    this._animation_started = 0;
+    this._is_animating = false;
 
     this._states = [new State("q0", true, false), new State("q1", false, true)];
     this._transitions = [
       new Transition("q0", "q0", "0  ", "000", "RRR"),
       new Transition("q0", "q0", "1  ", "111", "RRR"),
+      new Transition("q0", "q1", "   ", "   ", "SSS"),
     ];
 
     this._current_state = this._states.filter((s) => s.initial)[0].name;
+    this._current_opacity = 255;
   }
 
-  update(chars) {
-    if (this._ended) return;
+  step(chars) {
+    if (this._ended || this._is_animating) return;
 
     const transitions = this._transitions.filter(
       (t) => t.from_state == this._current_state && t.chars == chars
@@ -140,19 +156,65 @@ class FSA {
     )
       this._ended = true;
 
+    this._is_animating = true;
+
     return {
       new_chars: transitions[0].new_chars,
       directions: transitions[0].directions,
     };
   }
 
+  update(current_frame) {
+    if (!this._is_animating) {
+      this._animation_started = current_frame + 1;
+      return;
+    }
+
+    const elapsed = current_frame - this._animation_started;
+
+    if (elapsed > ANIMATION_DURATION) {
+      this._is_animating = false;
+      return;
+    }
+
+    const percent = elapsed / ANIMATION_DURATION;
+    this._current_opacity = polyOutEase(percent, 4) * 255;
+  }
+
   show(ctx) {
+    const theta = (Math.PI * 2) / this._states.length;
+    const state_size = Math.min(
+      this._size / 10,
+      (Math.PI * 2 * this._size) / 2 / this._states.length
+    );
+
     ctx.save();
-    ctx.strokeStyle = "black";
+
+    ctx.strokeStyle = WHITE;
     ctx.beginPath();
     ctx.arc(0, 0, this._size / 2, 0, Math.PI * 2);
     ctx.stroke();
+
+    ctx.save();
+    this._states.forEach((s, i) => {
+      ctx.rotate(theta);
+      ctx.beginPath();
+      ctx.arc(0, this._size / 3, state_size, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (s.name == this._current_state) {
+        const hex_opacity = dec_to_hex(this._current_opacity);
+        ctx.fillStyle = WHITE + hex_opacity;
+        ctx.fill();
+      }
+    });
     ctx.restore();
+
+    ctx.restore();
+  }
+
+  get is_animating() {
+    return this._is_animating;
   }
 
   get ended() {
@@ -171,7 +233,7 @@ class Head {
   show(ctx) {
     ctx.save();
     ctx.rotate(Math.PI / 2);
-    ctx.fillStyle = "black";
+    ctx.fillStyle = WHITE;
 
     ctx.beginPath();
 
@@ -232,10 +294,11 @@ class CircularTape {
           this.setCurrentChar(this._new_char);
           this._char_changed = true;
         }
-        this._current_opacity = polyInOutEase(percent, 16);
+        this._current_opacity = polyOutEase(percent) * 255;
       } else if (diff < 2 * ANIMATION_DURATION) {
         this._current_rotation =
-          (absInOutEase(percent, 4, 10) * Math.PI * 2) / TAPE_LEN;
+          ((absInOutEase(percent, 4, 10) * Math.PI * 2) / TAPE_LEN) *
+          this._step_direction;
       } else {
         this._is_animating = false;
         this._char_changed = false;
@@ -248,8 +311,8 @@ class CircularTape {
   show(ctx) {
     ctx.save();
 
-    ctx.fillStyle = "white";
-    ctx.strokeStyle = "black";
+    ctx.fillStyle = BLACK;
+    ctx.strokeStyle = WHITE;
 
     // fill main disk
     ctx.beginPath();
@@ -287,12 +350,8 @@ class CircularTape {
     ctx.rotate(this._current_rotation - spacing / 2 + current_rotation);
 
     this._tape.forEach((t, i) => {
-      if (this._char_changed && this._getCurrentPos() == i) {
-        ctx.fillStyle = `rgb(0, 0, 0, ${this._current_opacity})`;
-      } else {
-        ctx.fillStyle = "black";
-      }
       ctx.save();
+      ctx.strokeStyle = WHITE;
       // draw divisions
       ctx.rotate(-spacing * i);
       ctx.beginPath();
@@ -300,6 +359,12 @@ class CircularTape {
       ctx.lineTo(0, this._r);
       ctx.stroke();
 
+      if (this._char_changed && this._getCurrentPos() == i) {
+        const hex_opacity = dec_to_hex(this._current_opacity);
+        ctx.fillStyle = WHITE + hex_opacity;
+      } else {
+        ctx.fillStyle = WHITE;
+      }
       // write number on each section
       ctx.rotate(spacing / 2);
 

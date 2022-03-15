@@ -12,7 +12,7 @@ class Sketch extends Engine {
     this._tm.update(this.frameCount);
 
     this.ctx.save();
-    this.background("#FFFFFF");
+    this.background("#0E0E0E");
     this.ctx.translate(this.width / 2, this.height / 2);
     this.ctx.scale(this._scl, this._scl);
 
