@@ -224,6 +224,8 @@ class FSA {
 
     // set the animation to true
     this._is_animating = true;
+    this._animation_started = this._current_frame;
+    this._current_opacity = 0;
 
     return {
       new_chars: transitions[0].new_chars,
@@ -232,12 +234,9 @@ class FSA {
   }
 
   update(current_frame) {
-    if (!this._is_animating) {
-      // this is quite hacky, but keep setting the starting frame as the next
-      // as long as there is no animation
-      this._animation_started = current_frame + 1;
-      return;
-    }
+    this._current_frame = current_frame;
+
+    if (!this._is_animating) return;
 
     // calculate elapsed time from animation start
     const elapsed = current_frame - this._animation_started;
