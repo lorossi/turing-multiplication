@@ -5,7 +5,15 @@ class Sketch extends Engine {
 
   setup() {
     this._tm = new Automaton(this.width / 2);
-    this._tm.setTapes(["1111", "", ""]);
+
+    const input = Array(24)
+      .fill(null)
+      .map((_) => (Math.random() > 0.5 ? 1 : 0))
+      .join("");
+
+    console.log(input);
+
+    this._tm.setTapes([input, "", ""]);
   }
 
   draw() {

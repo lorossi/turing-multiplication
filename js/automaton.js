@@ -24,7 +24,7 @@ const absInOutEase = (x, ni = 5, no = 5) => {
 /**
  * Polynomial out easing
  */
-const polyOutEase = (x, n = 5) => 1 - Math.pow(1 - x, n);
+const polyInEase = (x, n = 5) => Math.pow(x, n);
 
 const dec_to_hex = (dec, padding = 0, prefix = false, round = true) => {
   if (round) dec = Math.floor(dec);
@@ -128,11 +128,21 @@ class FSA {
     this._animation_started = 0;
     this._is_animating = false;
 
-    this._states = [new State("q0", true, false), new State("q1", false, true)];
+    this._states = [
+      new State("q0", true, false),
+      new State("q1", false, false),
+      new State("q2", false, true),
+    ];
     this._transitions = [
-      new Transition("q0", "q0", "0  ", "000", "RRR"),
-      new Transition("q0", "q0", "1  ", "111", "RRR"),
-      new Transition("q0", "q1", "   ", "   ", "SSS"),
+      new Transition("q0", "q0", "0  ", "0  ", "RSS"),
+      new Transition("q0", "q0", "1  ", "1  ", "RSS"),
+
+      new Transition("q0", "q1", "   ", " 0 ", "LSS"),
+
+      new Transition("q1", "q1", "10 ", "100", "LSL"),
+      new Transition("q1", "q1", "00 ", "001", "LSL"),
+
+      new Transition("q1", "q2", " 0 ", "   ", "SSS"),
     ];
 
     this._current_state = this._states.filter((s) => s.initial)[0].name;
@@ -178,7 +188,7 @@ class FSA {
     }
 
     const percent = elapsed / ANIMATION_DURATION;
-    this._current_opacity = polyOutEase(percent, 4) * 255;
+    this._current_opacity = polyInEase(percent, 4) * 255;
   }
 
   show(ctx) {
@@ -294,7 +304,7 @@ class CircularTape {
           this.setCurrentChar(this._new_char);
           this._char_changed = true;
         }
-        this._current_opacity = polyOutEase(percent) * 255;
+        this._current_opacity = polyInEase(percent) * 255;
       } else if (diff < 2 * ANIMATION_DURATION) {
         this._current_rotation =
           ((absInOutEase(percent, 4, 10) * Math.PI * 2) / TAPE_LEN) *
