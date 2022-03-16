@@ -1,6 +1,6 @@
 const TAPE_LEN = 25;
 const TAPES_NUM = 2;
-const ANIMATION_DURATION = 30;
+const ANIMATION_DURATION = 2;
 
 const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
@@ -229,7 +229,7 @@ class FSA {
       new Transition("q4", "q3", "00", "01", "LL"),
 
       new Transition("q4", "q4", "1 ", "10", "LL"), // keep carrying
-      new Transition("q4", "q4", "01", "01", "LL"), // keep carrying
+      new Transition("q4", "q4", "01", "00", "LL"),
       new Transition("q4", "q4", "10", "10", "LL"),
       new Transition("q4", "q4", "11", "11", "LL"),
 
