@@ -8,7 +8,6 @@ const BLACK = "#0E0E0E";
 const ANY = "*";
 const NON_NULL = ".";
 const NUMERIC = "!";
-const NON_NUMERIC = "?";
 const ALPHABET = ["0", "1", "#", " "];
 
 /**
@@ -262,11 +261,6 @@ class FSA {
       if (s1.charAt(i) == NUMERIC && ["0", "1"].includes(s2.charAt(i)))
         continue;
       if (s2.charAt(i) == NUMERIC && ["0", "1"].includes(s1.charAt(i)))
-        continue;
-
-      if (s1.charAt(i) == NON_NUMERIC && !["0", "1"].includes(s2.charAt(i)))
-        continue;
-      if (s2.charAt(i) == NON_NUMERIC && !["0", "1"].includes(s1.charAt(i)))
         continue;
 
       if (s1.charAt(i) != s2.charAt(i)) return false;
