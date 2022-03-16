@@ -196,8 +196,7 @@ class FSA {
       new State("q3", false, false), // add input tape into output tape
       new State("q4", false, false), // carry
       new State("q5", false, false), // rewind output and memory tape
-      new State("q6", false, false), // rewind input tape until separator
-      new State("q7", false, false), // rewind output tape until end
+      new State("q6", false, false), // rewind output tape until end
       new State("qf", false, true), // multiplication ended
     ];
     // Initialize all the transitions
@@ -208,8 +207,8 @@ class FSA {
       new Transition("q1", "q1", "0* ", " *0", "LSL"), // 0 found, write zero to output and go left
       new Transition("q1", "q1", "0*!", " **", "LSS"),
       new Transition("q1", "q2", "1**", " **", "LSS"), // 1 found, go left and start adding
-      new Transition("q1", "q7", "  !", "  !", "SSL"), // multiplication ended, rewind output tape
-      new Transition("q1", "q7", "#**", "#**", "SSL"), // separator found without numbers, go to end
+      new Transition("q1", "q6", "  !", "  !", "SSL"), // multiplication ended, rewind output tape
+      new Transition("q1", "q6", "#**", "#**", "SSL"), // separator found without numbers, go to end
 
       new Transition("q2", "q2", "!**", "!**", "LSS"), // go left looking for separator
       new Transition("q2", "q3", "#**", "##*", "LSS"), // delimiter found, start adding
@@ -217,13 +216,13 @@ class FSA {
       new Transition("q3", "q3", "0*0", "0*0", "LLL"), // add 1 without carry
       new Transition("q3", "q3", "0* ", "0*0", "LLL"),
       new Transition("q3", "q3", "1*0", "1*1", "LLL"),
-      new Transition("q3", "q3", "0*1", "0*1", "LLL"),
       new Transition("q3", "q3", "1* ", "1*1", "LLL"),
+      new Transition("q3", "q3", "0*1", "0*1", "LLL"),
 
       new Transition("q3", "q4", "1*1", "**0", "LLL"), // add 1 with carry
 
-      new Transition("q3", "q5", "  *", "  *", "SRR"), // start rewinding memory and output tapes
-      new Transition("q1", "q7", "   ", "   ", "SSL"), // align output
+      new Transition("q3", "q5", "  *", "  *", "RRR"), // start rewinding memory and output tapes
+      new Transition("q1", "q6", "   ", "   ", "SSL"), // align output
 
       new Transition("q4", "q3", " * ", " *1", "LLL"), // carry and go back
       new Transition("q4", "q3", "0* ", "0*1", "LLL"),
@@ -235,15 +234,11 @@ class FSA {
       new Transition("q4", "q4", "1*0", "1*0", "LLL"),
       new Transition("q4", "q4", "1*1", "1*1", "LLL"),
 
-      new Transition("q5", "q5", "* *", "* *", "SRR"), // rewinding tapes
-      new Transition("q5", "q6", "*#*", "* *", "RSL"), // found the separator, start looking for end again
+      new Transition("q5", "q5", "* *", "* *", "RRR"), // rewinding tapes
+      new Transition("q5", "q0", "*#*", "*#*", "RSS"), // found the separator, start looking for end again
 
-      new Transition("q6", "q0", "#**", "#**", "RSS"), // look for input end
-      new Transition("q6", "q6", " **", " **", "RSS"),
-      new Transition("q6", "q6", "!**", "!**", "RSS"),
-
-      new Transition("q7", "q7", "** ", "***", "SSR"),
-      new Transition("q7", "qf", "**!", "***", "SSS"),
+      new Transition("q6", "q6", "** ", "***", "SSR"),
+      new Transition("q6", "qf", "**!", "***", "SSS"),
     ];
 
     if (this._states.length == 0) {
