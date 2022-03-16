@@ -235,7 +235,7 @@ class FSA {
 
       new Transition("q5", "q5", "!*", "**", "RR"), // rewinding tapes
       new Transition("q5", "q5", " *", " *", "RR"), // rewinding tapes
-      new Transition("q5", "q0", "#*", "#*", "SL"), // found the separator, start looking for end again
+      new Transition("q5", "q0", "#*", "#*", "RL"), // found the separator, start looking for end again
 
       new Transition("q6", "q6", "*!", "**", "SL"), // start rewinding
       new Transition("q6", "qf", "* ", "**", "SR"), // space found in output tape, go back one step
