@@ -204,7 +204,7 @@ class FSA {
       new Transition("q0", "q1", " *", " *", "LL"), // end found
 
       new Transition("q1", "q1", "0 ", " 0", "LL"), // 0 found, write zero to output and go left
-      new Transition("q1", "q1", "0!", " *", "LS"),
+      new Transition("q1", "q1", "0!", " *", "LL"),
       new Transition("q1", "q2", "1*", " *", "LS"), // 1 found, go left and start adding
       new Transition("q1", "q6", " !", " !", "SL"), // multiplication ended, rewind output tape
       new Transition("q1", "q6", "#*", "#*", "SL"), // separator found without numbers, go to end
@@ -237,8 +237,8 @@ class FSA {
       new Transition("q5", "q5", " *", " *", "RR"), // rewinding tapes
       new Transition("q5", "q0", "#*", "#*", "SL"), // found the separator, start looking for end again
 
-      new Transition("q6", "q6", "* ", "**", "SR"),
-      new Transition("q6", "qf", "*!", "**", "SS"),
+      new Transition("q6", "q6", "*!", "**", "SL"), // start rewinding
+      new Transition("q6", "qf", "* ", "**", "SR"), // space found in output tape, go back one step
     ];
 
     if (this._states.length == 0) {
