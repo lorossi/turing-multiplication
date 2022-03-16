@@ -6,13 +6,7 @@ class Sketch extends Engine {
   setup() {
     this._tm = new Automaton(this.width / 2);
 
-    const input = Array(24)
-      .fill(null)
-      .map((_) => (Math.random() > 0.5 ? 1 : 0))
-      .join("");
-
-    console.log(input);
-
+    const input = "11110100#100111011";
     this._tm.setTapes([input, "", ""]);
   }
 

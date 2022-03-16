@@ -1,9 +1,15 @@
 const TAPE_LEN = 25;
-const TAPES_NUM = 2;
+const TAPES_NUM = 3;
 const ANIMATION_DURATION = 30;
-const ALPHABET = ["0", "1", "#", " "];
+
 const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
+
+const ANY = "*";
+const NON_NULL = ".";
+const NUMERIC = "!";
+const NON_NUMERIC = "?";
+const ALPHABET = ["0", "1", "#", " "];
 
 /**
  * Polygonal in out easing
@@ -184,10 +190,61 @@ class FSA {
 
     // Initialize all the states
     this._states = [
-      new State("q0", true, false), // replace space
+      new State("q0", true, false), // initial state, look for end in input tape
+      new State("q1", false, false), // end found in input tape
+      new State("q2", false, false), // 1 found
+      new State("q3", false, false), // add input tape into output tape
+      new State("q4", false, false), // carry
+      new State("q5", false, false), // rewind output and memory tape
+      new State("q6", false, false), // rewind input tape until separator
+      new State("q7", false, false), // rewind output tape until end
+      new State("qf", false, true), // multiplication ended
     ];
     // Initialize all the transitions
-    this._transitions = [];
+    this._transitions = [
+      new Transition("q0", "q0", ".**", "***", "RSS"), // move right to find end
+      new Transition("q0", "q1", " **", " **", "LSL"), // end found
+
+      new Transition("q1", "q1", "0* ", " *0", "LSL"), // 0 found, write zero to output and go left
+      new Transition("q1", "q1", "0*!", " **", "LSS"),
+      new Transition("q1", "q2", "1**", " **", "LSS"), // 1 found, go left and start adding
+      new Transition("q1", "q7", "  !", "  !", "SSL"), // multiplication ended, rewind output tape
+      new Transition("q1", "q7", "#**", "#**", "SSL"), // separator found without numbers, go to end
+
+      new Transition("q2", "q2", "!**", "!**", "LSS"), // go left looking for separator
+      new Transition("q2", "q3", "#**", "##*", "LSS"), // delimiter found, start adding
+
+      new Transition("q3", "q3", "0*0", "0*0", "LLL"), // add 1 without carry
+      new Transition("q3", "q3", "0* ", "0*0", "LLL"),
+      new Transition("q3", "q3", "1*0", "1*1", "LLL"),
+      new Transition("q3", "q3", "0*1", "0*1", "LLL"),
+      new Transition("q3", "q3", "1* ", "1*1", "LLL"),
+
+      new Transition("q3", "q4", "1*1", "**0", "LLL"), // add 1 with carry
+
+      new Transition("q3", "q5", "  *", "  *", "SRR"), // start rewinding memory and output tapes
+      new Transition("q1", "q7", "   ", "   ", "SSL"), // align output
+
+      new Transition("q4", "q3", " * ", " *1", "LLL"), // carry and go back
+      new Transition("q4", "q3", "0* ", "0*1", "LLL"),
+      new Transition("q4", "q3", " *0", " *1", "LLL"),
+      new Transition("q4", "q3", "0*0", "0*1", "LLL"),
+
+      new Transition("q4", "q4", "1* ", "1*0", "LLL"), // keep carrying
+      new Transition("q4", "q4", "0*1", "0*1", "LLL"), // keep carrying
+      new Transition("q4", "q4", "1*0", "1*0", "LLL"),
+      new Transition("q4", "q4", "1*1", "1*1", "LLL"),
+
+      new Transition("q5", "q5", "* *", "* *", "SRR"), // rewinding tapes
+      new Transition("q5", "q6", "*#*", "* *", "RSL"), // found the separator, start looking for end again
+
+      new Transition("q6", "q0", "#**", "#**", "RSS"), // look for input end
+      new Transition("q6", "q6", " **", " **", "RSS"),
+      new Transition("q6", "q6", "!**", "!**", "RSS"),
+
+      new Transition("q7", "q7", "** ", "***", "SSR"),
+      new Transition("q7", "qf", "**!", "***", "SSS"),
+    ];
 
     if (this._states.length == 0) {
       this._error = true;
@@ -198,10 +255,35 @@ class FSA {
     }
   }
 
+  _compareStrings(s1, s2) {
+    if (s1.length != s2.length) return false;
+
+    for (let i = 0; i < s1.length; i++) {
+      if (s1.charAt(i) == ANY || s2.charAt(i) == ANY) continue;
+
+      if (s1.charAt(i) == NON_NULL && s2.charAt(i) != " ") continue;
+      if (s2.charAt(i) == NON_NULL && s1.charAt(i) != " ") continue;
+
+      if (s1.charAt(i) == NUMERIC && ["0", "1"].includes(s2.charAt(i)))
+        continue;
+      if (s2.charAt(i) == NUMERIC && ["0", "1"].includes(s1.charAt(i)))
+        continue;
+
+      if (s1.charAt(i) == NON_NUMERIC && !["0", "1"].includes(s2.charAt(i)))
+        continue;
+      if (s2.charAt(i) == NON_NUMERIC && !["0", "1"].includes(s1.charAt(i)))
+        continue;
+
+      if (s1.charAt(i) != s2.charAt(i)) return false;
+    }
+
+    return true;
+  }
+
   _findTransition(chars) {
     const transitions = this._transitions
       .filter((t) => t.from_state == this._current_state.name)
-      .filter((t) => t.chars == chars);
+      .filter((t) => this._compareStrings(chars, t.chars));
 
     if (transitions.length != 1) return null;
     return transitions[0];
@@ -223,6 +305,12 @@ class FSA {
     // no transitions found! exit
     if (next_transition == null) {
       this._ended = true;
+
+      if (this._current_state.final) {
+        console.log("Ended");
+        return;
+      }
+
       this._error = true;
       console.log("No transition found");
       return;
@@ -232,6 +320,7 @@ class FSA {
     if (next_state == null) {
       this._ended = true;
       this._error = true;
+
       console.log("No state found");
       return;
     }
@@ -239,10 +328,6 @@ class FSA {
     // update the current state
     this._current_state = next_state;
     console.log(this._current_state);
-
-    // a final state has been reached
-    if (this._states.filter((s) => this._current_state.name == s.name)[0].final)
-      this._ended = true;
 
     // set the animation to true
     this._is_animating = true;
@@ -383,7 +468,13 @@ class CircularTape {
     // set the animation with the new char and the step direction
     this._is_animating = true;
     this._animation_started = this._current_frame;
-    this._new_char = new_char;
+
+    if (ALPHABET.includes(new_char)) {
+      this._new_char = new_char;
+    } else {
+      this._new_char = this.getCurrentChar();
+    }
+
     this._step_direction = this._directions_map[step_direction];
   }
 
@@ -497,7 +588,10 @@ class CircularTape {
   }
 
   setCurrentChar(char) {
-    if (!ALPHABET.includes(char)) return;
+    if (!ALPHABET.includes(char) || char == ANY) {
+      this._new_char = this.getCurrentChar();
+      return;
+    }
 
     const pos = this._getCurrentPos();
     this._tape[pos] = char;
