@@ -1,5 +1,5 @@
 const TAPE_LEN = 25;
-const TAPES_NUM = 3;
+const TAPES_NUM = 2;
 const ANIMATION_DURATION = 30;
 
 const WHITE = "#F5F5F5";
@@ -200,44 +200,45 @@ class FSA {
     ];
     // Initialize all the transitions
     this._transitions = [
-      new Transition("q0", "q0", ".**", "***", "RSS"), // move right to find end
-      new Transition("q0", "q1", " **", " **", "LSL"), // end found
+      new Transition("q0", "q0", ".*", "**", "RS"), // move right to find end
+      new Transition("q0", "q1", " *", " *", "LL"), // end found
 
-      new Transition("q1", "q1", "0* ", " *0", "LSL"), // 0 found, write zero to output and go left
-      new Transition("q1", "q1", "0*!", " **", "LSS"),
-      new Transition("q1", "q2", "1**", " **", "LSS"), // 1 found, go left and start adding
-      new Transition("q1", "q6", "  !", "  !", "SSL"), // multiplication ended, rewind output tape
-      new Transition("q1", "q6", "#**", "#**", "SSL"), // separator found without numbers, go to end
+      new Transition("q1", "q1", "0 ", " 0", "LL"), // 0 found, write zero to output and go left
+      new Transition("q1", "q1", "0!", " *", "LS"),
+      new Transition("q1", "q2", "1*", " *", "LS"), // 1 found, go left and start adding
+      new Transition("q1", "q6", " !", " !", "SL"), // multiplication ended, rewind output tape
+      new Transition("q1", "q6", "#*", "#*", "SL"), // separator found without numbers, go to end
 
-      new Transition("q2", "q2", "!**", "!**", "LSS"), // go left looking for separator
-      new Transition("q2", "q3", "#**", "##*", "LSS"), // delimiter found, start adding
+      new Transition("q2", "q2", "!*", "!*", "LS"), // go left looking for separator
+      new Transition("q2", "q3", "#*", "#*", "LS"), // delimiter found, start adding
 
-      new Transition("q3", "q3", "0*0", "0*0", "LLL"), // add 1 without carry
-      new Transition("q3", "q3", "0* ", "0*0", "LLL"),
-      new Transition("q3", "q3", "1*0", "1*1", "LLL"),
-      new Transition("q3", "q3", "1* ", "1*1", "LLL"),
-      new Transition("q3", "q3", "0*1", "0*1", "LLL"),
+      new Transition("q3", "q3", "00", "00", "LL"), // add 1 without carry
+      new Transition("q3", "q3", "0 ", "00", "LL"),
+      new Transition("q3", "q3", "10", "11", "LL"),
+      new Transition("q3", "q3", "1 ", "11", "LL"),
+      new Transition("q3", "q3", "01", "01", "LL"),
 
-      new Transition("q3", "q4", "1*1", "**0", "LLL"), // add 1 with carry
+      new Transition("q3", "q4", "11", "*0", "LL"), // add 1 with carry
 
-      new Transition("q3", "q5", "  *", "  *", "RRR"), // start rewinding memory and output tapes
-      new Transition("q1", "q6", "   ", "   ", "SSL"), // align output
+      new Transition("q3", "q5", " *", " *", "RR"), // start rewinding memory and output tapes
+      new Transition("q1", "q6", "  ", "  ", "SL"), // align output
 
-      new Transition("q4", "q3", " * ", " *1", "LLL"), // carry and go back
-      new Transition("q4", "q3", "0* ", "0*1", "LLL"),
-      new Transition("q4", "q3", " *0", " *1", "LLL"),
-      new Transition("q4", "q3", "0*0", "0*1", "LLL"),
+      new Transition("q4", "q3", "  ", " 1", "LL"), // carry and go back
+      new Transition("q4", "q3", "0 ", "01", "LL"),
+      new Transition("q4", "q3", " 0", " 1", "LL"),
+      new Transition("q4", "q3", "00", "01", "LL"),
 
-      new Transition("q4", "q4", "1* ", "1*0", "LLL"), // keep carrying
-      new Transition("q4", "q4", "0*1", "0*1", "LLL"), // keep carrying
-      new Transition("q4", "q4", "1*0", "1*0", "LLL"),
-      new Transition("q4", "q4", "1*1", "1*1", "LLL"),
+      new Transition("q4", "q4", "1 ", "10", "LL"), // keep carrying
+      new Transition("q4", "q4", "01", "01", "LL"), // keep carrying
+      new Transition("q4", "q4", "10", "10", "LL"),
+      new Transition("q4", "q4", "11", "11", "LL"),
 
-      new Transition("q5", "q5", "* *", "* *", "RRR"), // rewinding tapes
-      new Transition("q5", "q0", "*#*", "*#*", "RSS"), // found the separator, start looking for end again
+      new Transition("q5", "q5", "!*", "**", "RR"), // rewinding tapes
+      new Transition("q5", "q5", " *", " *", "RR"), // rewinding tapes
+      new Transition("q5", "q0", "#*", "#*", "SL"), // found the separator, start looking for end again
 
-      new Transition("q6", "q6", "** ", "***", "SSR"),
-      new Transition("q6", "qf", "**!", "***", "SSS"),
+      new Transition("q6", "q6", "* ", "**", "SR"),
+      new Transition("q6", "qf", "*!", "**", "SS"),
     ];
 
     if (this._states.length == 0) {
