@@ -1,6 +1,4 @@
-const TAPE_LEN = 25;
-const TAPES_NUM = 2;
-const ANIMATION_DURATION = 2;
+const ANIMATION_DURATION = 30;
 
 const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
@@ -41,29 +39,34 @@ const dec_to_hex = (dec, padding = 0, prefix = false, round = true) => {
   return hex;
 };
 
-class Automaton {
-  constructor(size) {
+class TuringMachine {
+  constructor(size, tapes_num = 2, tapes_len = 25) {
     this._size = size;
+    this._tapes_num = tapes_num;
+    this._tapes_len = tapes_len;
+
     this._current_frame = 0;
     this._ended = false;
     this._error = false;
 
-    const disk_width = this._size / TAPES_NUM / 2;
+    const disk_width = this._size / this._tapes_num / 2;
     const disk_spacing = disk_width / 2;
 
     // instantiate all the K tapes
-    this._tapes = Array(TAPES_NUM)
+    this._tapes = Array(this._tapes_num)
       .fill(null)
       .map((_, i) => {
         const disk_r = this._size - (disk_spacing + disk_width) * i;
-        return new CircularTape(disk_r, disk_width);
+        return new CircularTape(disk_r, disk_width, this._tapes_len);
       })
       .reverse();
 
     // instantiate the heads
-    this._heads = Array(TAPES_NUM)
+    this._heads = Array(this._tapes_num)
       .fill(null)
-      .map((_, i) => new Head(this._tapes[i]._r, disk_width / 5));
+      .map(
+        (_, i) => new Head(this._tapes[i]._r, disk_width / 5, this._tapes_len)
+      );
 
     // instantiate the FSA controlling the TM
     this._fsa = new FSA(this._size / 2);
@@ -74,7 +77,7 @@ class Automaton {
    * @param {Array} contents: array of strings
    */
   setTapes(contents) {
-    contents.forEach((c, i) => this._tapes[i].setTape(c.split("")));
+    this._tapes.forEach((t, i) => t.setTape(contents[i].split("")));
   }
 
   /**
@@ -196,7 +199,8 @@ class FSA {
       new State("q4", false, false), // carry
       new State("q5", false, false), // rewind output and memory tape
       new State("q6", false, false), // rewind output tape until end
-      new State("qf", false, true), // multiplication ended
+      new State("q7", false, false), // clean input tape
+      new State("qf", false, true), // everything dome
     ];
     // Initialize all the transitions
     this._transitions = [
@@ -238,7 +242,10 @@ class FSA {
       new Transition("q5", "q0", "#*", "#*", "RL"), // found the separator, start looking for end again
 
       new Transition("q6", "q6", "*!", "**", "SL"), // start rewinding
-      new Transition("q6", "qf", "* ", "**", "SR"), // space found in output tape, go back one step
+      new Transition("q6", "q7", "* ", "**", "SR"), // space found in output tape, go back one step
+
+      new Transition("q7", "q7", ".*", " *", "LS"), // clear input tape
+      new Transition("q7", "qf", " *", " *", "SS"), // input tape clear, ending
     ];
 
     if (this._states.length == 0) {
@@ -351,10 +358,7 @@ class FSA {
   show(ctx) {
     const theta = (Math.PI * 2) / this._states.length;
     // there's a lower bound on the state size
-    const state_size = Math.min(
-      this._size / 10,
-      (Math.PI * 2 * this._size) / 2 / this._states.length
-    );
+    const state_size = (Math.PI * this._size) / this._states.length / 4;
 
     ctx.save();
 
@@ -399,10 +403,10 @@ class FSA {
 
 /** this class does nothing computation wise, it's just for showing */
 class Head {
-  constructor(dist, size) {
+  constructor(dist, size, tape_len) {
     this._dist = dist;
     this._size = size;
-    this._span = (Math.PI * 2) / TAPE_LEN / 4;
+    this._span = (Math.PI * 2) / tape_len / 4;
   }
 
   show(ctx) {
@@ -422,12 +426,13 @@ class Head {
 
 /** Class handling the tape */
 class CircularTape {
-  constructor(r, width) {
+  constructor(r, width, tapes_len) {
     this._r = Math.floor(r);
     this._inner_r = Math.floor(r - width);
+    this._tapes_len = tapes_len;
 
     // fill the tape with blank characters
-    this._tape = Array(TAPE_LEN)
+    this._tape = Array(this._tapes_len)
       .fill(null)
       .map((_) => ALPHABET[ALPHABET.length - 1]);
     // convert directions in formal way to direction
@@ -450,7 +455,7 @@ class CircularTape {
   setTape(tape) {
     // copy the tapes, filling with enough spaces
     this._tape = [...tape];
-    for (let i = tape.length; i < TAPE_LEN; i++)
+    for (let i = tape.length; i < this._tapes_len; i++)
       this._tape.push(ALPHABET[ALPHABET.length - 1]);
   }
 
@@ -485,7 +490,7 @@ class CircularTape {
       } else if (diff < 2 * ANIMATION_DURATION) {
         // animate the rotation
         this._current_rotation =
-          ((absInOutEase(percent, 4, 10) * Math.PI * 2) / TAPE_LEN) *
+          ((absInOutEase(percent, 4, 10) * Math.PI * 2) / this._tapes_len) *
           this._step_direction;
       } else {
         this._is_animating = false;
@@ -526,7 +531,7 @@ class CircularTape {
 
     const font_size = Math.floor((this._r - this._inner_r) / 2);
     const text_dist = Math.floor((this._r + this._inner_r - font_size) / 2);
-    const spacing = (Math.PI * 2) / TAPE_LEN;
+    const spacing = (Math.PI * 2) / this._tapes_len;
 
     ctx.font = `${font_size}px Courier New`;
     ctx.textAlign = "center";
@@ -566,8 +571,8 @@ class CircularTape {
   _getCurrentPos() {
     let pos = this._current_pos;
 
-    while (pos < 0) pos += TAPE_LEN;
-    while (pos >= TAPE_LEN) pos -= TAPE_LEN;
+    while (pos < 0) pos += this._tapes_len;
+    while (pos >= this._tapes_len) pos -= this._tapes_len;
 
     return pos;
   }

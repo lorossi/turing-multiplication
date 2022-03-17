@@ -4,13 +4,15 @@ class Sketch extends Engine {
   }
 
   setup() {
-    this._tm = new Automaton(this.width / 2);
+    this._tm = new TuringMachine(this.width / 2, 2, 33);
 
-    const input = "1101110#11100001";
+    const input = "10#100";
     this._tm.setTapes([input, ""]);
   }
 
   draw() {
+    if (this._tm.ended || this._tm.error) return;
+
     this._tm.update(this.frameCount);
 
     this.ctx.save();
@@ -21,13 +23,5 @@ class Sketch extends Engine {
     this._tm.show(this.ctx);
 
     this.ctx.restore();
-  }
-
-  click() {
-    //this._tm.stepDisks();
-  }
-
-  keyPress(key, code) {
-    console.log("key press", { key, code });
   }
 }
