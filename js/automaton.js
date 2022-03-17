@@ -1,5 +1,3 @@
-const ANIMATION_DURATION = 30;
-
 const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
 
@@ -84,17 +82,18 @@ class TuringMachine {
    *
    * @param {int} current_frame
    */
-  update(current_frame) {
+  update(current_frame, animation_duration) {
     if (this._error || this._ended) return;
+
     // save the current frame, needed for animations
     this._current_frame = current_frame;
 
     // update the FSA and each frame
-    this._fsa.update(current_frame);
+    this._fsa.update(current_frame, animation_duration);
     if (this._fsa.error) {
       this._error = true;
     }
-    this._tapes.forEach((t) => t.update(current_frame));
+    this._tapes.forEach((t) => t.update(current_frame, animation_duration));
 
     // check if the fsa has ended
     if (this._fsa.ended) {
@@ -324,7 +323,6 @@ class FSA {
 
     // update the current state
     this._current_state = next_state;
-    console.log(this._current_state);
 
     // set the animation to true
     this._is_animating = true;
@@ -337,7 +335,7 @@ class FSA {
     };
   }
 
-  update(current_frame) {
+  update(current_frame, animation_duration) {
     this._current_frame = current_frame;
 
     if (!this._is_animating) return;
@@ -345,13 +343,13 @@ class FSA {
     // calculate elapsed time from animation start
     const elapsed = current_frame - this._animation_started;
     // end animation if enough time has been elapsed
-    if (elapsed > ANIMATION_DURATION) {
+    if (elapsed > animation_duration) {
       this._is_animating = false;
       return;
     }
 
     // calculate current state opacity
-    const percent = elapsed / ANIMATION_DURATION;
+    const percent = elapsed / animation_duration;
     this._current_opacity = polyInEase(percent, 4) * 255;
   }
 
@@ -454,8 +452,10 @@ class CircularTape {
 
   setTape(tape) {
     // copy the tapes, filling with enough spaces
-    this._tape = [...tape];
-    for (let i = tape.length; i < this._tapes_len; i++)
+    this._tape = [...tape].filter((t) => ALPHABET.includes(t));
+    console.log(this._tape);
+
+    for (let i = this._tape.length; i < this._tapes_len; i++)
       this._tape.push(ALPHABET[ALPHABET.length - 1]);
   }
 
@@ -473,21 +473,21 @@ class CircularTape {
     this._step_direction = this._directions_map[step_direction];
   }
 
-  update(current_frame) {
+  update(current_frame, animation_duration) {
     this._current_frame = current_frame;
 
     if (this._is_animating) {
       const diff = this._current_frame - this._animation_started;
-      const percent = (diff / ANIMATION_DURATION) % 1;
+      const percent = (diff / animation_duration) % 1;
 
-      if (diff < ANIMATION_DURATION) {
+      if (diff < animation_duration) {
         // animate the char
         if (this._new_char != this.getCurrentChar()) {
           this.setCurrentChar(this._new_char);
           this._char_changed = true;
         }
         this._current_opacity = polyInEase(percent) * 255;
-      } else if (diff < 2 * ANIMATION_DURATION) {
+      } else if (diff < 2 * animation_duration) {
         // animate the rotation
         this._current_rotation =
           ((absInOutEase(percent, 4, 10) * Math.PI * 2) / this._tapes_len) *

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta name="description" content="Webpage description goes here" />
+    <meta name="description" content="TURING MULTIPLICATION" />
     <meta charset="utf-8" />
-    <title>TITLE</title>
+    <title>TURING MULTIPLICATION</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -29,8 +29,28 @@
   <body>
     <div class="container">
       <canvas id="sketch" width="1000" height="1000"> </canvas>
+      <div class="controls-line">
+        <div class="group">
+          <input
+            type="range"
+            id="speed"
+            name="speed"
+            min="0"
+            max="100"
+            value="50"
+          />
+          <label for="speed">speed</label>
+        </div>
+        <div class="group"><button type="button" id="pause">pause</button></div>
+        <div class="group"><button type="button" id="reset">reset</button></div>
+      </div>
+      <div class="controls-line">
+        <div class="group">
+          <input type="text" id="input" name="input" />
+        </div>
+        <button type="button" id="compute">compute</button>
+      </div>
     </div>
-
     <div class="footer"></div>
   </body>
 </html>
