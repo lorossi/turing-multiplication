@@ -52,15 +52,14 @@ class Sketch extends Engine {
     return `${populate_array(len)}#${populate_array(len)}`;
   }
 
-  _validateInput(input) {
-    if (input.length >= this._tapes_len) return false;
+  _validateInput(n1, n2) {
+    if (n1.length + n2.len >= this._tapes_len) return "";
+    if (n1.length == 0 || n2.length == 0) return "";
 
-    if (input.split("").reduce((a, b) => (a += b == "#" ? 1 : 0), 0) != 1)
-      return false;
+    if (!RegExp("^(0|1)+$").test(n1)) return "";
+    if (!RegExp("^(0|1)+$").test(n2)) return "";
 
-    if (input.split("#").some((i) => i.length == 0)) return false;
-
-    return true;
+    return `${n1}#${n2}`;
   }
 
   _setCallbacks() {
@@ -79,13 +78,17 @@ class Sketch extends Engine {
       .addEventListener("click", () => this.setup());
 
     document.querySelector("#compute").addEventListener("click", () => {
-      const input = document.querySelector("#input");
-      const new_tape = input.value;
-      input.innerHTML = "";
-      if (this._validateInput(new_tape)) {
+      const n1 = document.querySelector("#number1");
+      const n2 = document.querySelector("#number2");
+      const input = this._validateInput(n1.value, n2.value);
+
+      if (input != "") {
         this.setup();
-        this._tm.setTapes([new_tape.replace("*", "#"), ""]);
+        this._tm.setTapes([input, ""]);
       }
+
+      n1.value = "";
+      n2.value = "";
     });
   }
 }

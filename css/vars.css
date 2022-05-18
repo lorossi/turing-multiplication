@@ -3,7 +3,7 @@
   --text-color: #f5f5f5;
   --visited-link-color: rgb(130, 130, 130);
 
-  --text-size: 1.5rem;
+  --text-size: 1rem;
 }
 
 @media only screen and (max-width: 600px) {

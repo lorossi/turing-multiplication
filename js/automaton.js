@@ -47,7 +47,7 @@ class TuringMachine {
     this._ended = false;
     this._error = false;
 
-    const disk_width = this._size / this._tapes_num / 2;
+    const disk_width = (this._size / this._tapes_num) * 0.4;
     const disk_spacing = disk_width / 2;
 
     // instantiate all the K tapes
@@ -67,7 +67,7 @@ class TuringMachine {
       );
 
     // instantiate the FSA controlling the TM
-    this._fsa = new FSA(this._size / 2);
+    this._fsa = new FSA(this._tapes[0].inner_r * 2 - disk_spacing * 2);
   }
 
   /**
@@ -186,8 +186,6 @@ class FSA {
     this._is_animating = false;
     // opacity relative to the current state
     this._current_opacity = 255;
-
-    // https://www.quora.com/How-do-you-use-a-Turing-machine-to-multiply-2-3
 
     // Initialize all the states
     this._states = [
@@ -453,7 +451,6 @@ class CircularTape {
   setTape(tape) {
     // copy the tapes, filling with enough spaces
     this._tape = [...tape].filter((t) => ALPHABET.includes(t));
-    console.log(this._tape);
 
     for (let i = this._tape.length; i < this._tapes_len; i++)
       this._tape.push(ALPHABET[ALPHABET.length - 1]);
@@ -594,5 +591,9 @@ class CircularTape {
 
   get is_animating() {
     return this._is_animating;
+  }
+
+  get inner_r() {
+    return this._inner_r;
   }
 }

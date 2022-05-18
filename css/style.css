@@ -30,14 +30,14 @@ a:active {
   height: 100vh;
 
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
   flex-direction: column;
 }
 
 #sketch {
-  height: 90vh;
-  width: 90vh;
+  height: 80vh;
+  width: 80vh;
   aspect-ratio: 1;
 
   touch-action: none;
@@ -47,7 +47,7 @@ a:active {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
   margin-top: calc(var(--text-size) / 2);
 }
 
@@ -76,12 +76,15 @@ a:active {
   padding-right: 2vw;
 }
 
+input {
+  font-size: var(--text-size);
+}
+
 input[type="range"] {
   -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
   background: transparent; /* Otherwise white in Chrome */
   margin-left: calc(var(--text-size) / 2);
   margin-right: calc(var(--text-size) / 2);
-  font-size: var(--text-size);
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -120,7 +123,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 }
 
 button,
-input[type="text"] {
+input[type="numeric"] {
   cursor: pointer;
   font-size: var(--text-size);
   font-weight: inherit;
@@ -129,12 +132,18 @@ input[type="text"] {
   border: none;
   padding-left: calc(var(--text-size) / 4);
   padding-right: calc(var(--text-size) / 4);
+  margin-left: calc(var(--text-size) / 2);
+  margin-right: calc(var(--text-size) / 2);
 }
 
 @media only screen and (max-width: 600px) {
   #sketch {
     height: 95vw;
     width: 95vw;
+  }
+
+  .container {
+    justify-content: center;
   }
 
   .footer {
