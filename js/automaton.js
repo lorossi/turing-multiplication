@@ -1,6 +1,7 @@
 const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
 
+// i could have used regex but I was feeling unsecure about it
 const ANY = "*";
 const NON_NULL = ".";
 const NUMERIC = "!";

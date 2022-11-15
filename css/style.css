@@ -81,14 +81,9 @@ input {
 }
 
 input[type="range"] {
-  -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
   background: transparent; /* Otherwise white in Chrome */
   margin-left: calc(var(--text-size) / 2);
   margin-right: calc(var(--text-size) / 2);
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
 }
 
 input[type="range"]:focus,
