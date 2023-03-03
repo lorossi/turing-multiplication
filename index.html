@@ -29,41 +29,50 @@
   <body>
     <div class="container">
       <canvas id="sketch" width="1000" height="1000"> </canvas>
-      <div class="controls-line">
-        <div class="group">
-          <input
-            type="range"
-            id="speed"
-            name="speed"
-            min="0"
-            max="100"
-            value="50"
-          />
-          <label for="speed">speed</label>
+      <div class="controls">
+        <div class="controls-line">
+          <div class="group">
+            <input
+              type="range"
+              id="speed"
+              name="speed"
+              min="0"
+              max="100"
+              value="50"
+            />
+            <label for="speed">speed</label>
+          </div>
+          <div class="group">
+            <button type="button" id="pause">pause</button>
+          </div>
+          <div class="group">
+            <button type="button" id="reset">reset</button>
+          </div>
         </div>
-        <div class="group"><button type="button" id="pause">pause</button></div>
-        <div class="group"><button type="button" id="reset">reset</button></div>
-      </div>
-      <div class="controls-line">
-        <div class="group">
-          <input
-            type="numeric"
-            id="number1"
-            name="number1"
-            title="Binary number"
-          />
-          x
-          <input
-            type="numeric"
-            id="number2"
-            name="number2"
-            title="Binary number"
-          />
-          =
+        <div class="controls-line">
+          <div class="group">
+            <input
+              type="numeric"
+              id="number1"
+              name="number1"
+              title="Binary number"
+            />
+            x
+            <input
+              type="numeric"
+              id="number2"
+              name="number2"
+              title="Binary number"
+            />
+            =
+            <button type="button" id="compute">compute</button>
+          </div>
         </div>
-        <button type="button" id="compute">compute</button>
       </div>
     </div>
-    <div class="footer"></div>
+    <div class="footer">
+      <a href="https://lorenzoros.si">Lorenzo Rossi</a>
+      <a href="https://github.com/lorossi/turing">GitHub repo</a>
+    </div>
   </body>
 </html>

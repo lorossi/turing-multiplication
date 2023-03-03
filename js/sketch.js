@@ -90,5 +90,12 @@ class Sketch extends Engine {
       n1.value = "";
       n2.value = "";
     });
+
+    document.querySelectorAll("[type=numeric]").forEach((e) =>
+      e.addEventListener("input", (input) => {
+        if (input.data != "1" && input.data != "0")
+          input.target.value = input.target.value.slice(0, -1);
+      })
+    );
   }
 }
