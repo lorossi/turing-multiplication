@@ -10,15 +10,12 @@ const Alphabet = {
 };
 
 /**
- * Polygonal in out easing
- */
-const polyInOutEase = (x, n = 10) => {
-  if (x < 0.5) return Math.pow(2, n - 1) * Math.pow(x, n);
-  return 1 - Math.pow(-2 * x + 2, n) / 2;
-};
-
-/**
- * Non symmetric in out polygonal ease
+ * Asymmetric Polynomial in out easing (different exponents for in and out)
+ *
+ * @param {number} x value to ease in range [0, 1]
+ * @param {number} ni exponent for in
+ * @param {number} no exponent for out
+ * @returns {number}
  */
 const absInOutEase = (x, ni = 5, no = 5) => {
   if (x < 0.5) return Math.pow(2, ni - 1) * Math.pow(x, ni);
@@ -26,21 +23,38 @@ const absInOutEase = (x, ni = 5, no = 5) => {
 };
 
 /**
- * Polynomial out easing
+ * Polynomial in easing
+ *
+ * @param {number} x value to ease in range [0, 1]
+ * @param {number} n exponent
+ * @returns {number}
  */
 const polyInEase = (x, n = 5) => Math.pow(x, n);
 
 /**
- * Decimal - Hexadecimal conversion
+ * Decimal to hexadecimal conversion
+ * @param {number} dec decimal number
+ * @param {number} length length of the output string
+ * @param {boolean} prefix add 0x prefix
+ * @param {boolean} round round the decimal number
+ * @returns {string}
  */
-const dec_to_hex = (dec, padding = 0, prefix = false, round = true) => {
+const dec_to_hex = (dec, length = 0, prefix = false, round = true) => {
   if (round) dec = Math.floor(dec);
-  let hex = dec.toString(16).padStart(padding, 0).toUpperCase();
+  let hex = dec.toString(16).padStart(length, 0).toUpperCase();
   if (prefix) hex = "0x" + hex;
   return hex;
 };
 
 class TuringMachine {
+  /**
+   *
+   * @param {number} size of the TM in pixels
+   * @param {*} tapes_num number of tapes
+   * @param {*} tapes_len length of each tape
+   *
+   * To be fair, this is not a Turing Machine, but a linear bounded Turing Machine.
+   */
   constructor(size, tapes_num = 2, tapes_len = 25) {
     this._size = size;
     this._tapes_num = tapes_num;
@@ -120,6 +134,11 @@ class TuringMachine {
     }
   }
 
+  /**
+   * Show the TM
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   */
   show(ctx) {
     // show all tapes , heads and FSA
     ctx.save();
@@ -147,10 +166,18 @@ class TuringMachine {
     });
   }
 
+  /**
+   * @returns {boolean} true if the TM is in error state
+   * @readonly
+   */
   get error() {
     return this._error;
   }
 
+  /**
+   * @returns {boolean} true if the TM has ended
+   * @readonly
+   */
   get ended() {
     return this._ended;
   }
@@ -160,6 +187,12 @@ class TuringMachine {
  * Class handling a single state
  */
 class State {
+  /**
+   *
+   * @param {string} name of the state
+   * @param {boolean} initial true if the state is initial
+   * @param {boolean} final true if the state is final
+   */
   constructor(name, initial = false, final = false) {
     this.name = name;
     this.initial = initial;
@@ -179,6 +212,12 @@ class Transition {
     this.directions = directions;
   }
 
+  /**
+   * Converts a transition to a string, in tikz format.
+   * I used this method to draw the transitions in the report without having to write them by hand.
+   *
+   * @returns {string}
+   */
   toLaTeX() {
     const format_c = (c) => {
       switch (c) {
@@ -338,8 +377,6 @@ class FSA {
       new Transition("q7", "q7", ".*", " *", "LS"), // clear input tape
       new Transition("q7", "qf", " *", " *", "SS"), // input tape clear, ending
     ];
-
-    console.log(this._transitions.map((t) => t.toLaTeX()).join("\n"));
 
     if (this._states.length == 0) {
       this._error = true;
