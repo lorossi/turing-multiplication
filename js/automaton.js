@@ -176,6 +176,92 @@ class Transition {
     this.new_chars = new_chars;
     this.directions = directions;
   }
+
+  toLaTeX() {
+    const format_c = (c) => {
+      switch (c) {
+        case " ":
+          return "\\varepsilon";
+        case "0":
+        case "1":
+          return c;
+        case "#":
+          return "\\#";
+        case "*":
+          return "0 \\vert 1 \\vert \\# \\vert \\varepsilon";
+        case ".":
+          return "0 \\vert 1 \\vert \\#";
+        case "!":
+          return "0 \\vert 1";
+      }
+    };
+
+    const format_dir = (d) => {
+      return d
+        .split("")
+        .map((dd) => {
+          switch (dd) {
+            case "L":
+              return "\\leftarrow";
+            case "R":
+              return "\\rightarrow";
+            case "S":
+              return "\\downarrow";
+          }
+
+          return dd;
+        })
+        .join("");
+    };
+
+    const add_brackets = (c) => `\\left( ${c} \\right)`;
+
+    const insertAtIndex = (str, substring, index) => {
+      while (index < 0) index = str.length + index;
+      return str.slice(0, index) + substring + str.slice(index);
+    };
+
+    let latex = "";
+    latex += `\\path[->] (${this.from_state}) edge `;
+
+    if (this.from_state == this.to_state)
+      latex += "[loop above, looseness=30] ";
+    else latex += "[bend left] ";
+
+    const text_position =
+      this.from_state == this.to_state
+        ? "above"
+        : parseInt(this.from_state.slice(1)) > parseInt(this.to_state.slice(1))
+        ? "below"
+        : "above";
+
+    latex += `node[${text_position}]{$`;
+
+    let chars = this.chars
+      .split("")
+      .map((c) => format_c(c))
+      .map((c) => add_brackets(c));
+    chars = insertAtIndex(chars, "\\langle", 0);
+    chars = insertAtIndex(chars, "\\rangle", chars.length);
+
+    latex += chars;
+    latex += " \\vert ";
+
+    let new_chars = this.new_chars
+      .split("")
+      .map((c) => format_c(c))
+      .map((c) => add_brackets(c));
+    new_chars = insertAtIndex(new_chars, "\\langle", 0);
+    new_chars = insertAtIndex(new_chars, "\\rangle", new_chars.length);
+
+    latex += new_chars;
+
+    latex += ", ";
+    latex += add_brackets(format_dir(this.directions));
+    latex += `$} (${this.to_state});`;
+
+    return latex;
+  }
 }
 
 class FSA {
@@ -201,6 +287,11 @@ class FSA {
       new State("qf", false, true), // everything dome
     ];
     // Initialize all the transitions
+
+    // Any character: *
+    // Non null character: .
+    // Numeric character: !
+
     this._transitions = [
       new Transition("q0", "q0", ".*", "**", "RS"), // move right to find end
       new Transition("q0", "q1", " *", " *", "LL"), // end found
@@ -245,6 +336,8 @@ class FSA {
       new Transition("q7", "q7", ".*", " *", "LS"), // clear input tape
       new Transition("q7", "qf", " *", " *", "SS"), // input tape clear, ending
     ];
+
+    console.log(this._transitions.map((t) => t.toLaTeX()).join("\n"));
 
     if (this._states.length == 0) {
       this._error = true;
