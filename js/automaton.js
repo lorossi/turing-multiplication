@@ -2,10 +2,12 @@ const WHITE = "#F5F5F5";
 const BLACK = "#0E0E0E";
 
 // i could have used regex but I was feeling unsecure about it
-const ANY = "*";
-const NON_NULL = ".";
-const NUMERIC = "!";
-const ALPHABET = ["0", "1", "#", " "];
+const Alphabet = {
+  ANY: "*",
+  NON_NULL: ".",
+  NUMERIC: "!",
+  ALPHABET: ["0", "1", "#", " "],
+};
 
 /**
  * Polygonal in out easing
@@ -141,7 +143,7 @@ class TuringMachine {
    */
   set current_chars(chars) {
     chars.forEach((c, i) => {
-      if (ALPHABET.contains(c)) this._tapes[i].current_char = c;
+      if (Alphabet.ALPHABET.contains(c)) this._tapes[i].current_char = c;
     });
   }
 
@@ -352,14 +354,15 @@ class FSA {
     if (s1.length != s2.length) return false;
 
     for (let i = 0; i < s1.length; i++) {
-      if (s1.charAt(i) == ANY || s2.charAt(i) == ANY) continue;
-
-      if (s1.charAt(i) == NON_NULL && s2.charAt(i) != " ") continue;
-      if (s2.charAt(i) == NON_NULL && s1.charAt(i) != " ") continue;
-
-      if (s1.charAt(i) == NUMERIC && ["0", "1"].includes(s2.charAt(i)))
+      if (s1.charAt(i) == Alphabet.ANY || s2.charAt(i) == Alphabet.ANY)
         continue;
-      if (s2.charAt(i) == NUMERIC && ["0", "1"].includes(s1.charAt(i)))
+
+      if (s1.charAt(i) == Alphabet.NON_NULL && s2.charAt(i) != " ") continue;
+      if (s2.charAt(i) == Alphabet.NON_NULL && s1.charAt(i) != " ") continue;
+
+      if (s1.charAt(i) == Alphabet.NUMERIC && ["0", "1"].includes(s2.charAt(i)))
+        continue;
+      if (s2.charAt(i) == Alphabet.NUMERIC && ["0", "1"].includes(s1.charAt(i)))
         continue;
 
       if (s1.charAt(i) != s2.charAt(i)) return false;
@@ -524,7 +527,7 @@ class CircularTape {
     // fill the tape with blank characters
     this._tape = Array(this._tapes_len)
       .fill(null)
-      .map((_) => ALPHABET[ALPHABET.length - 1]);
+      .map((_) => Alphabet.ALPHABET[Alphabet.ALPHABET.length - 1]);
     // convert directions in formal way to direction
     this._directions_map = { R: 1, L: -1, S: 0 };
 
@@ -544,10 +547,10 @@ class CircularTape {
 
   setTape(tape) {
     // copy the tapes, filling with enough spaces
-    this._tape = [...tape].filter((t) => ALPHABET.includes(t));
+    this._tape = [...tape].filter((t) => Alphabet.ALPHABET.includes(t));
 
     for (let i = this._tape.length; i < this._tapes_len; i++)
-      this._tape.push(ALPHABET[ALPHABET.length - 1]);
+      this._tape.push(Alphabet.ALPHABET[Alphabet.ALPHABET.length - 1]);
   }
 
   setAnimation(new_char, step_direction) {
@@ -555,7 +558,7 @@ class CircularTape {
     this._is_animating = true;
     this._animation_started = this._current_frame;
 
-    if (ALPHABET.includes(new_char)) {
+    if (Alphabet.ALPHABET.includes(new_char)) {
       this._new_char = new_char;
     } else {
       this._new_char = this.getCurrentChar();
@@ -674,7 +677,7 @@ class CircularTape {
   }
 
   setCurrentChar(char) {
-    if (!ALPHABET.includes(char) || char == ANY) {
+    if (!Alphabet.ALPHABET.includes(char) || char == Alphabet.ANY) {
       this._new_char = this.getCurrentChar();
       return;
     }
