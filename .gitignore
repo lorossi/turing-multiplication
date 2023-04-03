@@ -1,1 +1,7 @@
 .vscode
+
+*.aux
+*.fdb*
+*.fls
+*.log
+*.gz
