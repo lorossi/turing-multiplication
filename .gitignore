@@ -1,4 +1,5 @@
 .vscode
+output/frames*
 
 *.aux
 *.fdb*
