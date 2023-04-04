@@ -493,6 +493,7 @@ class FSA {
     ctx.save();
 
     ctx.strokeStyle = WHITE;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(0, 0, this._size / 2, 0, Math.PI * 2);
     ctx.stroke();
@@ -637,6 +638,7 @@ class CircularTape {
 
     ctx.fillStyle = BLACK;
     ctx.strokeStyle = WHITE;
+    ctx.lineWidth = 2;
 
     // fill main disk
     ctx.beginPath();
@@ -676,6 +678,7 @@ class CircularTape {
     this._tape.forEach((t, i) => {
       ctx.save();
       ctx.strokeStyle = WHITE;
+      ctx.lineWidth = 2;
       // draw divisions
       ctx.rotate(-spacing * i);
       ctx.beginPath();
