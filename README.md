@@ -1,9 +1,8 @@
 # Turing multiplication
 
-![Turing multiplication](output/0000000-long-resized.png)
+![Turing multiplication start](output/0000000-long-resized.png) ![Turing multiplication end](output/0007280-long-resized.png)
 
-**TL:DR** this is (weird) a Turing Machine that multiplies two numbers. Try it out [here]().
-
+**TL:DR** this is (weird) a Turing Machine that multiplies two numbers. Try it out [here](https://lorenzoros.si/turing-multiplication/).
 
 One of the first exams that I studied for my Computer Science and Engineering Master's Degree was **Algorithms and Data Structures** *(in Italian, Algoritmi e Principi dell'informatica)*.
 
