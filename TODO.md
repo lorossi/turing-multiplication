@@ -1,5 +1,7 @@
 # TO DO LIST
 
-- [ ] Create a video
+- [x] Create a video
+  - [ ] extract some stills
 - [x] Fix the interface
-- [ ] Create a transition chart of the machine
+- [x] Create a transition chart of the machine
+- [ ] Publish on my website
