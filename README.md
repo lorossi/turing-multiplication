@@ -1,6 +1,9 @@
 # Turing multiplication
 
+![Turing multiplication](output/0000000-long-resized.png)
+
 **TL:DR** this is a Turing Machine that multiplies two numbers. Try it out [here]().
+
 
 One of the first exams that I studied for my Computer Science and Engineering Master's Degree was **Algorithms and Data Structures** *(in Italian, Algoritmi e Principi dell'informatica)*.
 
@@ -143,9 +146,10 @@ When the computation is complete, the input tape is cleaned and the head of the 
 
 ### Output
 
-A sample output can be seen [here](); a choppy *(and huge!)* gif is shown below.
+The `output` folder contains two rendered videos of the computation of the product of $2$ random numbers each.
+A sample of the output is shown below, but you can find the full videos [here](output).
 
-![output]()
+![output](output/output.gif)
 
 ### In the end
 
