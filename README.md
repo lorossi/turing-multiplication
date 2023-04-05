@@ -31,7 +31,7 @@ A Turing Machine is a theoretical model of computation, which is defined by a $9
 - An **input** alphabet, $I$
 - An **output** alphabet, $O$
 - A **memory alphabet**, $\Gamma$
-  - an **initial** memory content, $\Z*0 \in \Gamma$
+  - an **initial** memory content, $Z_0 \in \Gamma$
 - A **transition function**, $\delta$, defined over the $k$ tapes
   - $\delta: (Q-F) \times I \times \Gamma^k \rightarrow Q \times \Gamma^k \times \left\lbrace\rightarrow, \leftarrow, \downarrow\right\rbrace^{k+1}$
 - An **output function** $\eta$
@@ -82,7 +82,7 @@ Initially, I was using $4$ tapes:
 I quickly realised that it was not necessary to keep a separate tape for the carry bit, since it could be (naively) encoded in the output tape.
 I gradually managed to reduce the number of tapes to $2$, without any compromise on the functionality:
 
-- the two input numbers are stored in the **same tape**, separated by the $\#$ symbol
+- the two input numbers are stored in the **same tape**, separated by the "$\char"0023$" symbol
 - the **carry bit** is encoded by using different states according to the type of sum *(with or without carry)*
 - the **output** is stored in its tape
 
