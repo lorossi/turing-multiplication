@@ -51,7 +51,7 @@ Two theorems are fundamental in the creation of a Turing Machine:
 Defining the input and output alphabets is not hard: since the numbers will be provided in binary, they will also be outputted in binary. Both $I$ and $O$ will be $\left\lbrace0,1\right\rbrace$.
 
 The memory alphabet, however, needs two more symbols: one for representing the **empty cell** and one for representing the **multiplication number** between the two numbers.
-The former will be $\varepsilon$ *(rendered as space in the graphic output for clarity)*, while the latter will be $\char"0023$. It could be any character different from the other two, but I liked them.
+The former will be $\varepsilon$ *(rendered as space in the graphic output for clarity)*, while the latter will be #. It could be any character different from the other two, but I liked them.
 
 #### How many tapes?
 
@@ -82,7 +82,7 @@ Initially, I was using $4$ tapes:
 I quickly realised that it was not necessary to keep a separate tape for the carry bit, since it could be (naively) encoded in the output tape.
 I gradually managed to reduce the number of tapes to $2$, without any compromise on the functionality:
 
-- the two input numbers are stored in the **same tape**, separated by the $\char"0023$ *(pound)* symbol
+- the two input numbers are stored in the **same tape**, separated by the # *(pound)* symbol
 - the **carry bit** is encoded by using different states according to the type of sum *(with or without carry)*
 - the **output** is stored in its tape
 
